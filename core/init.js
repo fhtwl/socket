@@ -76,12 +76,15 @@ class InitManager {
             /* 每打开一个连接就往 上线文数组中 添加一个上下文 */
             ctxs.push(ctx);
             ctx.websocket.on("message", (message) => {
-                console.log(message);
+                console.log(JSON.stringify(message));
+                
+
                 for(let i = 0; i < ctxs.length; i++) {
-                    if (ctx == ctxs[i]) {
-                        ctxs[i].websocket.send(message);
-                        continue;
-                    }
+                    ctxs[i].websocket.send(message);
+                    // if (ctx == ctxs[i]) {
+                    //     ctxs[i].websocket.send(message);
+                    //     continue;
+                    // }
                     
                 }
             });

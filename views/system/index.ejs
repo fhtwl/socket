@@ -3,44 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        html,body {
+            width: 100%;
+            height: 100%;
+        }
+        #main{
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        #main .player {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #999;
+            border-radius: 50%;
+            transform: translate(0%,0%);
+            position: relative;
+            left: 0;
+            top: 0;
+            margin-left: -20px;
+            /* margin-top: -20px; */
+            transform: translateY(-20px);
+            transition: all 2s;
+        }
+        .btn-start {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            
+        }
+    </style>
 </head>
 <body>
-    <input type="text" id="content" />
+    <!-- <input type="text" id="content" />
     <input type="button" value="发送" id="send" />
-    <input type="button" value="关闭" id="close" />
+    <input type="button" value="关闭" id="close" /> -->
+    <div id="main">
+    </div>
 </body>
 <script type="text/javascript">
-    /* 封装 WebSocket 实例化的方法  */
-    var CreateWebSocket = (function () {
-        return function (urlValue) {
-            if(window.WebSocket) return new WebSocket(urlValue);
-            if(window.MozWebSocket) return new MozWebSocket(urlValue);
-            return false;
+    
+    // /* 发送消息 */
+    // document.getElementById("send").onclick = function () {
+    //     var str = document.getElementById("content").value;
+    //     webSocket.send(str);
+    // }
+    // /* 关闭消息 */
+    // document.getElementById("close").addEventListener("click", function () {
+    //     webSocket.close();
+    // });
+     
+    
+    class Game {
+        static init (data) {
+            this.players = []
+            this.project = {
+                progressTime: 0,
+                players: this.players
+            }
+            this.player = {
+                startPosition: [Math.random() * 100,Math.random() * 100],
+                endPosition: [0,0],
+                id: null,
+                state: 0 //0观战，1游戏中，2死亡
+            }
+            this.view = document.getElementById('main')
+            let startButton = document.createElement('button')
+            startButton.setAttribute('class','btn btn-start')
+            startButton.innerText = '加入游戏'
+            startButton.onclick = this.joinGame
+            this.view.appendChild(startButton)
+            this.initWebSocket()
+            this.view.addEventListener('click',function (e){
+                const {width,height} = Game.getMap()
+                let x = e.offsetX/width,
+                    y = e.offsetY/height
+                if(Game.player.state == 1) {
+                    Game.move({
+                        position:[x,y]
+                    })
+                    Game.send()
+                }
+            })
         }
-    })();
-    /* 实例化 WebSocket 连接对象, 地址为 ws 协议 */
-    var webSocket = CreateWebSocket("ws://localhost:8888");
-    /* 接收到服务端的消息时 */
-    webSocket.onmessage = function (msg) {
-        console.log("服务端说:" + msg.data);
-    };
-    /* 关闭时 */
-    webSocket.onclose = function () {
-        console.log("关闭连接");
-    };
-    /* 发送消息 */
-    document.getElementById("send").onclick = function () {
-        var str = document.getElementById("content").value;
-        webSocket.send(str);
+        static initWebSocket () {
+            /* 封装 WebSocket 实例化的方法  */
+            var CreateWebSocket = (function () {
+                return function (urlValue) {
+                    if(window.WebSocket) return new WebSocket(urlValue);
+                    if(window.MozWebSocket) return new MozWebSocket(urlValue);
+                    return false;
+                }
+            })();
+            /* 实例化 WebSocket 连接对象, 地址为 ws 协议 */
+            Game.webSocket = CreateWebSocket("ws://localhost:8888");
+            /* 接收到服务端的消息时 */
+            Game.webSocket.onmessage = function (msg) {
+                console.log("服务端说:" + msg.data);
+            };
+            /* 关闭时 */
+            Game.webSocket.onclose = function () {
+                console.log("关闭连接");
+            };
+            //添加事件监听
+            Game.webSocket.addEventListener('open', function () {
+                Game.webSocket.send('连接成功')
+                console.log("连接成功");
+                Game.player.id = `player${new Date().getTime()}${(Math.random() * 10000).toFixed(0)}`
+            });
+        }
+        static joinGame () {
+            Game.player.state = 1
+            Game.players.push(Game.player)
+            Game.examplePlayer = document.createElement('div')
+            Game.examplePlayer.setAttribute('id',Game.player.id)
+            Game.examplePlayer.setAttribute('class','player')
+            Game.view.appendChild(Game.examplePlayer);
+        }
+        static playerDie(){
+            Game.players.state = 2
+        }
+        static send (){
+            Game.webSocket.send(JSON.stringify(Game.project))
+        }
+        static move({position}) {
+            Game.player.startPosition = Game.player.endPosition
+            Game.player.endPosition = position
+            Game.examplePlayer.style.left = `${Game.player.endPosition[0]*100}%`
+            Game.examplePlayer.style.top = `${Game.player.endPosition[1]*100}%`
+        }
+        static getMap() {
+            if(window.innerWidth !== null){ // 最新的浏览器
+                return {
+                    "width": window.innerWidth,
+                    "height": window.innerHeight
+                }
+            }else if(document.compatMode === 'CSS1Compat'){ // W3C
+                return {
+                    "width": document.documentElement.clientWidth,
+                    "height": document.documentElement.clientHeight
+                }
+            }
+            return {
+                "width": document.body.clientWidth,
+                "height": document.body.clientHeight
+            }
+        }
     }
-    /* 关闭消息 */
-    document.getElementById("close").addEventListener("click", function () {
-        webSocket.close();
-    });
-     //添加事件监听
-     webSocket.addEventListener('open', function () {
-        webSocket.send('连接成功')
-        console.log("连接成功");
-    });
+    Game.init()
+    
 </script>
 </html>
