@@ -9,7 +9,7 @@ class InitManager {
         InitManager.loadLogger()
         InitManager.loadView()
         InitManager.loadSocket()
-        InitManager.initLoadRouters()
+        // InitManager.initLoadRouters()
     }
     // 加载配置文件
     static loadConfig () {
@@ -71,16 +71,39 @@ class InitManager {
         const app = websockify(InitManager.app);
         app.listen(8888);
         let ctxs = [];
+        let project = {
+            players: []
+        }
         /* 实现简单的接发消息 */
         app.ws.use((ctx, next) => {
             /* 每打开一个连接就往 上线文数组中 添加一个上下文 */
             ctxs.push(ctx);
             ctx.websocket.on("message", (message) => {
-                console.log(JSON.stringify(message));
-                
 
+                
+                let res = {}
+                try {
+                    res = JSON.parse(message)
+                } catch (error) {
+                    
+                }
+                let index 
+                if(res && res.player) {
+                    index = project.players.findIndex(v=> {
+                        return v.id == res.player.id
+                    })
+                    if(index > -1) {
+                        project.players[index] = res.player
+                    }
+                    else {
+                        project.players.push(res.player)
+                    }
+                    console.log(res.player.endPosition);
+                }
+                // console.log(res.player)
+                // console.log(project.players);
                 for(let i = 0; i < ctxs.length; i++) {
-                    ctxs[i].websocket.send(message);
+                    ctxs[i].websocket.send(JSON.stringify(project));
                     // if (ctx == ctxs[i]) {
                     //     ctxs[i].websocket.send(message);
                     //     continue;

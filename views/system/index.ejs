@@ -61,10 +61,9 @@
     
     class Game {
         static init (data) {
-            this.players = []
             this.project = {
                 progressTime: 0,
-                players: this.players
+                players: []
             }
             this.player = {
                 startPosition: [Math.random() * 100,Math.random() * 100],
@@ -75,7 +74,8 @@
             this.view = document.getElementById('main')
             let startButton = document.createElement('button')
             startButton.setAttribute('class','btn btn-start')
-            startButton.innerText = '加入游戏'
+            // startButton.innerText = '加入游戏'
+            startButton.innerText = 'start'
             startButton.onclick = this.joinGame
             this.view.appendChild(startButton)
             this.initWebSocket()
@@ -104,6 +104,27 @@
             Game.webSocket = CreateWebSocket("ws://localhost:8888");
             /* 接收到服务端的消息时 */
             Game.webSocket.onmessage = function (msg) {
+                let players = []
+                try {
+                    
+                    let project = JSON.parse(msg.data)
+                    
+                    players =  [].concat(project.players)
+                    // Game.project.players = project.players
+                    // Game.project
+                    // Game.players = JSON.parse(msg.data).players
+                   
+                    
+                } catch (error) {
+                    console.log(error)
+                }
+                // Game.project.players = []
+                console.log(Game.project.players)
+                Game.project.players = players
+                Game.render()
+                // if(msg.data) {
+                //     Game.project = JSON.parse(msg.data)
+                // }
                 console.log("服务端说:" + msg.data);
             };
             /* 关闭时 */
@@ -119,17 +140,20 @@
         }
         static joinGame () {
             Game.player.state = 1
-            Game.players.push(Game.player)
+            Game.project.players.push(Game.player)
             Game.examplePlayer = document.createElement('div')
             Game.examplePlayer.setAttribute('id',Game.player.id)
             Game.examplePlayer.setAttribute('class','player')
+            Game.examplePlayer.innerText = '自己'
             Game.view.appendChild(Game.examplePlayer);
         }
         static playerDie(){
-            Game.players.state = 2
+            Game.player.state = 2
         }
         static send (){
-            Game.webSocket.send(JSON.stringify(Game.project))
+            Game.webSocket.send(JSON.stringify({
+                player: Game.player
+            }))
         }
         static move({position}) {
             Game.player.startPosition = Game.player.endPosition
@@ -153,6 +177,50 @@
                 "width": document.body.clientWidth,
                 "height": document.body.clientHeight
             }
+        }
+        static render() {
+            let views = []
+            for(let i = 0;i<Game.view.querySelectorAll('.player').length;i++) {
+                views.push(Game.view.querySelectorAll('.player')[i])
+            }
+            for(let j = 0;j<Game.project.players.length;j++) {
+                let player = Game.project.players[j]
+                let newViews = views.filter(v=>{
+                    return v.id == player.id
+                })
+                if(newViews && newViews.length > 0) {
+
+                }
+                else {
+                    let examplePlayer = document.createElement('div')
+                    examplePlayer.setAttribute('id',player.id)
+                    examplePlayer.setAttribute('class','player')
+                    examplePlayer.innerText = player.id
+                    Game.view.appendChild(examplePlayer);
+                    views.push(examplePlayer)
+                }
+            }
+            for(let j = 0;j<Game.project.players.length;j++) {
+                let player = Game.project.players[j]
+                
+                
+                for(let i = 0;i<views.length;i++) {
+                    let node = views[i]
+                    
+                    
+                    if(player.id == node.id && player.id != Game.player.id) {
+                        node.style.left = `${player.endPosition[0]*100}%`
+                        node.style.top = `${player.endPosition[1]*100}%`
+                    }
+                    else {
+
+                    }
+                }
+            }
+               
+                
+
+            
         }
     }
     Game.init()
