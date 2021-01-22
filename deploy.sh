@@ -6,8 +6,8 @@ git add -A
 echo "执行命令：commit -m 'deploy'"
 git commit -m 'deploy'
 
-echo "git pull"
-git pull
+echo "git pull origin master"
+git pull origin master
 # 如果发布到 https://<USERNAME>.github.io
 # git push -f https://github.com/fhtwl/socket.git master
 git push -f https://github.com/fhtwl/socket.git master
